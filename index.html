@@ -503,6 +503,34 @@
 </script>
 
 <!-- MIAW: Embedded Service Deployment Cumulus_Seguros_Chat_MIAW -->
+<style>
+  #miaw-attach-fab{
+    position:fixed; right:88px; bottom:24px; z-index:9998;
+    background:linear-gradient(135deg, var(--magenta-mid), var(--magenta-vibrant));
+    color:#fff; border:none; border-radius:50px;
+    padding:.8rem 1.1rem; font-weight:600; font-size:.85rem;
+    box-shadow:0 6px 20px rgba(228,0,124,.35);
+    cursor:pointer; display:none; align-items:center; gap:.5rem;
+    transition:transform .15s ease, box-shadow .2s ease;
+  }
+  #miaw-attach-fab:hover{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(228,0,124,.45); }
+  #miaw-attach-fab svg{ width:18px; height:18px; }
+  #miaw-attach-input{ display:none; }
+  #miaw-attach-toast{
+    position:fixed; right:24px; bottom:96px; z-index:9999;
+    background:#2D1B2E; color:#fff; padding:.7rem 1rem; border-radius:8px;
+    font-size:.85rem; max-width:260px; box-shadow:0 4px 14px rgba(0,0,0,.25);
+    display:none; opacity:0; transition:opacity .2s ease;
+  }
+</style>
+
+<button id="miaw-attach-fab" type="button" onclick="document.getElementById('miaw-attach-input').click()">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 6v11.5a4 4 0 1 1-8 0V5a2.5 2.5 0 1 1 5 0v10.5a1 1 0 1 1-2 0V6h-1.5v9.5a2.5 2.5 0 0 0 5 0V5a4 4 0 1 0-8 0v12.5a5.5 5.5 0 0 0 11 0V6h-1.5z"/></svg>
+  Adjuntar fotos al chat
+</button>
+<input id="miaw-attach-input" type="file" multiple accept="image/*" />
+<div id="miaw-attach-toast"></div>
+
 <script type="text/javascript">
   function initEmbeddedMessaging() {
     try {
@@ -520,6 +548,7 @@
     }
   }
 
+  // Pass demoContext to routing flow
   window.addEventListener('onEmbeddedMessagingReady', () => {
     try {
       embeddedservice_bootstrap.prechatAPI.setHiddenPrechatFields({
@@ -529,6 +558,58 @@
     } catch (e) {
       console.warn('MIAW: setHiddenPrechatFields failed', e);
     }
+  });
+
+  // Show "Adjuntar fotos" FAB once the conversation starts (bot has joined)
+  window.addEventListener('onEmbeddedMessagingFirstBotMessageSent', () => {
+    const fab = document.getElementById('miaw-attach-fab');
+    if (fab) fab.style.display = 'inline-flex';
+    console.log('MIAW: attach FAB enabled');
+  });
+
+  // Hide FAB when the chat closes
+  window.addEventListener('onEmbeddedMessagingConversationEnded', () => {
+    const fab = document.getElementById('miaw-attach-fab');
+    if (fab) fab.style.display = 'none';
+  });
+
+  // Toast helper
+  function showAttachToast(msg, ms){
+    const t = document.getElementById('miaw-attach-toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.display = 'block';
+    requestAnimationFrame(() => t.style.opacity = '1');
+    setTimeout(() => {
+      t.style.opacity = '0';
+      setTimeout(() => t.style.display = 'none', 250);
+    }, ms || 2500);
+  }
+
+  // When the user picks files, simulate "attachment" by sending a message on their behalf
+  document.getElementById('miaw-attach-input').addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const names = files.map(f => f.name).join(', ');
+    const count = files.length;
+    const msg = 'He adjuntado ' + count + ' foto' + (count > 1 ? 's' : '') +
+                ' del siniestro: ' + names + '. Por favor procesa la inspeccion virtual.';
+    try {
+      embeddedservice_bootstrap.utilAPI.sendTextMessage(msg)
+        .then(() => {
+          showAttachToast(count + ' foto' + (count > 1 ? 's' : '') + ' enviada' + (count > 1 ? 's' : '') + ' al agente');
+          console.log('MIAW: photos message sent', names);
+        })
+        .catch((err) => {
+          showAttachToast('No se pudo enviar al chat. Reintenta.');
+          console.error('MIAW: sendTextMessage failed', err);
+        });
+    } catch (err) {
+      showAttachToast('Abrí el chat primero para adjuntar fotos.');
+      console.error('MIAW: utilAPI not ready', err);
+    }
+    // Reset so the same file can be re-selected
+    e.target.value = '';
   });
 </script>
 <script type="text/javascript"
