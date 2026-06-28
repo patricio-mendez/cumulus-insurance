@@ -502,5 +502,38 @@
   calcPrima();
 </script>
 
+<!-- MIAW: Embedded Service Deployment Cumulus_Seguros_Chat_MIAW -->
+<script type="text/javascript">
+  function initEmbeddedMessaging() {
+    try {
+      embeddedservice_bootstrap.settings.language = 'es';
+      embeddedservice_bootstrap.init(
+        '00Dg7000005Wltm',
+        'Cumulus_Seguros_Chat_MIAW',
+        'https://storm-0da1adeb707833.my.site.com/ESWCumulusSegurosChatM1782510212729',
+        {
+          scrt2URL: 'https://storm-0da1adeb707833.my.salesforce-scrt.com'
+        }
+      );
+    } catch (err) {
+      console.error('Error loading Embedded Messaging: ', err);
+    }
+  }
+
+  window.addEventListener('onEmbeddedMessagingReady', () => {
+    try {
+      embeddedservice_bootstrap.prechatAPI.setHiddenPrechatFields({
+        demoContext: 'insurance'
+      });
+      console.log('MIAW: demoContext=insurance set');
+    } catch (e) {
+      console.warn('MIAW: setHiddenPrechatFields failed', e);
+    }
+  });
+</script>
+<script type="text/javascript"
+        src="https://storm-0da1adeb707833.my.site.com/ESWCumulusSegurosChatM1782510212729/assets/js/bootstrap.min.js"
+        onload="initEmbeddedMessaging()"></script>
+
 </body>
 </html>
