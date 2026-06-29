@@ -502,7 +502,67 @@
   calcPrima();
 </script>
 
-<!-- MIAW: Embedded Service Deployment Cumulus_Seguros_Chat_MIAW (WebV1, soporta attachments nativos) -->
+<!-- MIAW: Embedded Service Deployment Cumulus_Seguros_Chat_MIAW (WebV1) -->
+<style>
+  /* Oculta el FAB nativo redondo de MIAW */
+  .embeddedMessagingFrame ~ .embeddedMessagingConversationButton,
+  div.embeddedMessagingConversationButton {
+    display: none !important;
+  }
+
+  /* Pill flotante custom estilo "Pregunteme lo que quiera" */
+  #cs-chat-pill {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 9998;
+    display: none;
+    align-items: center;
+    gap: .65rem;
+    padding: .8rem 1.4rem .8rem 1.1rem;
+    background: linear-gradient(135deg, #2D1B2E 0%, #4A1135 100%);
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: .95rem;
+    font-weight: 500;
+    border: 2px solid rgba(255, 255, 255, .85);
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(45, 27, 46, .35), 0 0 0 1px rgba(0,0,0,.08);
+    transition: transform .18s ease, box-shadow .2s ease;
+  }
+  #cs-chat-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(228, 0, 124, .35), 0 0 0 1px rgba(228, 0, 124, .25);
+    border-color: #FF9B8E;
+  }
+  #cs-chat-pill .cs-chat-pill-icon {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    background: rgba(255, 255, 255, .12);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #cs-chat-pill .cs-chat-pill-icon svg {
+    width: 14px;
+    height: 14px;
+    fill: #fff;
+  }
+  @media (max-width: 480px) {
+    #cs-chat-pill { right: 12px; bottom: 12px; font-size: .85rem; padding: .65rem 1.1rem; }
+  }
+</style>
+
+<button id="cs-chat-pill" type="button" onclick="openCumulusChat()" aria-label="Abrir chat con asistente">
+  <span class="cs-chat-pill-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.65 1.27 5.03 3.3 6.7L4 22l4.62-1.83c1.05.32 2.18.5 3.38.5 5.52 0 10-4.03 10-9S17.52 2 12 2zm0 2c4.41 0 8 3.13 8 7s-3.59 7-8 7c-1.13 0-2.21-.2-3.2-.57l-.46-.18-2.93 1.16.75-3.13-.31-.34C5.04 14.61 4 12.88 4 11c0-3.87 3.59-7 8-7z"/></svg>
+  </span>
+  Pregúnteme lo que quiera
+</button>
+
 <script type="text/javascript">
   function initEmbeddedMessaging() {
     try {
@@ -531,6 +591,39 @@
       console.warn('MIAW: setHiddenPrechatFields failed', e);
     }
   });
+
+  // Mostrar pill custom cuando el FAB nativo ya esta listo
+  window.addEventListener('onEmbeddedMessagingButtonCreated', () => {
+    const pill = document.getElementById('cs-chat-pill');
+    if (pill) pill.style.display = 'inline-flex';
+    console.log('MIAW: custom pill enabled');
+  });
+
+  // Ocultar pill cuando el chat esta abierto, mostrarla cuando se minimiza
+  window.addEventListener('onEmbeddedMessagingWindowOpened', () => {
+    const pill = document.getElementById('cs-chat-pill');
+    if (pill) pill.style.display = 'none';
+  });
+  window.addEventListener('onEmbeddedMessagingWindowMinimized', () => {
+    const pill = document.getElementById('cs-chat-pill');
+    if (pill) pill.style.display = 'inline-flex';
+  });
+  window.addEventListener('onEmbeddedMessagingConversationEnded', () => {
+    const pill = document.getElementById('cs-chat-pill');
+    if (pill) pill.style.display = 'inline-flex';
+  });
+
+  // Abrir chat al click en la pill
+  function openCumulusChat() {
+    try {
+      if (embeddedservice_bootstrap && embeddedservice_bootstrap.utilAPI && embeddedservice_bootstrap.utilAPI.launchChat) {
+        embeddedservice_bootstrap.utilAPI.launchChat()
+          .catch(err => console.warn('MIAW launchChat error:', err));
+      }
+    } catch (err) {
+      console.error('MIAW: error opening chat', err);
+    }
+  }
 </script>
 <script type="text/javascript"
         src="https://storm-0da1adeb707833.my.site.com/ESWCumulusSegurosChatM1782510212729/assets/js/bootstrap.min.js"
