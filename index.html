@@ -592,29 +592,34 @@
     }
   });
 
-  // Mostrar pill custom cuando el FAB nativo ya esta listo
-  window.addEventListener('onEmbeddedMessagingButtonCreated', () => {
+  // Helpers para mostrar/ocultar la pill custom
+  function showCumulusPill() {
     const pill = document.getElementById('cs-chat-pill');
     if (pill) pill.style.display = 'inline-flex';
-    console.log('MIAW: custom pill enabled');
-  });
-
-  // Ocultar pill cuando el chat esta abierto, mostrarla cuando se minimiza
-  window.addEventListener('onEmbeddedMessagingWindowOpened', () => {
+  }
+  function hideCumulusPill() {
     const pill = document.getElementById('cs-chat-pill');
     if (pill) pill.style.display = 'none';
-  });
-  window.addEventListener('onEmbeddedMessagingWindowMinimized', () => {
-    const pill = document.getElementById('cs-chat-pill');
-    if (pill) pill.style.display = 'inline-flex';
-  });
-  window.addEventListener('onEmbeddedMessagingConversationEnded', () => {
-    const pill = document.getElementById('cs-chat-pill');
-    if (pill) pill.style.display = 'inline-flex';
-  });
+  }
+
+  // Mostrar pill custom cuando el bootstrap ya esta listo
+  window.addEventListener('onEmbeddedMessagingButtonCreated', showCumulusPill);
+  window.addEventListener('onEmbeddedMessagingReady', showCumulusPill);
+
+  // Ocultar pill mientras el chat este abierto (cualquiera de estos eventos puede dispararse)
+  window.addEventListener('onEmbeddedMessagingChatWindowOpened', hideCumulusPill);
+  window.addEventListener('onEmbeddedMessagingWindowOpened', hideCumulusPill);
+  window.addEventListener('onEmbeddedMessagingConversationOpened', hideCumulusPill);
+
+  // Mostrar pill cuando el chat se minimiza/cierra
+  window.addEventListener('onEmbeddedMessagingChatWindowMinimized', showCumulusPill);
+  window.addEventListener('onEmbeddedMessagingWindowMinimized', showCumulusPill);
+  window.addEventListener('onEmbeddedMessagingWindowClosed', showCumulusPill);
+  window.addEventListener('onEmbeddedMessagingConversationEnded', showCumulusPill);
 
   // Abrir chat al click en la pill
   function openCumulusChat() {
+    hideCumulusPill();
     try {
       if (embeddedservice_bootstrap && embeddedservice_bootstrap.utilAPI && embeddedservice_bootstrap.utilAPI.launchChat) {
         embeddedservice_bootstrap.utilAPI.launchChat()
@@ -623,6 +628,29 @@
     } catch (err) {
       console.error('MIAW: error opening chat', err);
     }
+  }
+
+  // Fallback robusto: observar el DOM por la presencia de la ventana de conversacion
+  // y ocultar la pill cuando exista. Esto cubre el caso donde los eventos no se disparan
+  // (cambios entre estados pre-chat / conversation / minimized).
+  function setupChatVisibilityObserver() {
+    const observer = new MutationObserver(() => {
+      const chatFrame = document.querySelector(
+        '.embeddedMessagingFrame, iframe[title*="Messaging"], iframe[title*="hat"]'
+      );
+      const chatVisible = chatFrame && getComputedStyle(chatFrame).display !== 'none' && chatFrame.offsetWidth > 0;
+      if (chatVisible) {
+        hideCumulusPill();
+      } else {
+        showCumulusPill();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupChatVisibilityObserver);
+  } else {
+    setupChatVisibilityObserver();
   }
 </script>
 <script type="text/javascript"
